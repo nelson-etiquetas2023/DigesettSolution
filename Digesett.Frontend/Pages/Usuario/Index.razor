@@ -1,0 +1,205 @@
+﻿@page "/usuario/index"
+@using Digesett.Shared.Models
+@using Digesett.Frontend.Pages.Components
+@using System.Text.Json
+@using System.Diagnostics
+@using System.IO
+@using CsvHelper
+@using CsvHelper.Configuration
+@using CsvHelper.Configuration.Attributes
+@using ClosedXML.Excel
+@using System.Globalization
+@inject HttpClient httpClient
+@inject IJSRuntime JS 
+@inject SweetAlertService Swal
+@inject NavigationManager navigator
+@implements IAsyncDisposable
+
+<div class="row mb-3">
+    <div class="col d-flex mb-3">
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-person-gear me-2" viewBox="0 0 16 16">
+  <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zm3.63-4.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/>
+</svg>
+<h1 class="fw-bold mb-2 bg-light">Gestión de Usuarios</h1>
+
+    </div>
+</div>
+
+
+<nav class="navbar navbar-light bg-light mb-3 d-flex justify-content-start">
+    <a href="/usuario/create" class="btn btn-primary me-2 shadow"><i class="bi bi-person-plus-fill me-2"></i>Usuario Nuevo</a>
+    <button class="btn btn-dark me-2" @onclick="ExportCsv"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Exportar CVS</button>
+    <button class="btn btn-success me-2" @onclick="ExportExcel"><i class="bi bi-file-earmark-excel-fill me-2 shadow"></i>Exportar Excel</button>
+    <button class="btn btn-danger me-2"><i class="bi bi-file-pdf-fill shadows me-2"></i>Exportar Pdf</button>
+    <button class="btn btn-warning me-2"><i class="bi bi-envelope-arrow-up shadow me-2"></i>Enviar Correo</button>
+</nav>
+
+@if(isLoading)
+{
+    <LoadingIndicator />
+}
+else 
+{   
+        <table class="table table-striped shadow" id="TableUsers">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Usuario</th>
+                    <th>Correo</th>
+                    <th>Tipo</th>
+                    <th>Dpto.</th>
+                    <th>Cargo</th>
+                    <th>Telefono</th>
+                    <th>Status</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Users)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td>@item.Name</td>
+                        <td>@item.Email</td>
+                        <td>@item.TypeUser</td>
+                        <td>@item.Departament</td>
+                        <td>@item.Cargo</td>
+                        <td>@item.Phone</td>
+                        <td>@(item.Active ? "Activo" : "Desactivado")</td>
+                        <td>
+                            <a href="/usuario/update/@item.Id" class="me-2" style="text-decoration:none;" tabindex="0" data-toggle="tooltip" title="Editar Usuario">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="black" class="bi bi-pencil-fill" viewBox="0 0 16 16">
+                                    <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z" />
+                                </svg>
+                            </a>
+                            <a href="/usuario/delete/@item.Id" tabindex="0" data-toggle="tooltip" title="Eliminar Usuario">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="black" class="bi bi-trash" viewBox="0 0 16 16">
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+                                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    
+}
+
+@code {
+    public bool isLoading;
+    public List<User> Users = new();
+    TimeSpan timeQuery;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Users = await LoadData();
+        await JS.InvokeAsync<object>("DataTableLoad", "#TableUsers");
+    }
+
+    private async Task ExportCsv()
+    {
+        var memoryStream = new MemoryStream();
+        await using (var writer = new StreamWriter(memoryStream))
+        await using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+        {
+            await csv.WriteRecordsAsync(Users);
+        }
+        var arr = memoryStream.ToArray();
+        await JS.InvokeAsync<object>("saveAsFile", "UsersDigesett.csv",Convert.ToBase64String(arr));
+    }
+
+    async Task ExportExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            var propertyNames = typeof(User).GetProperties().Select(p => p.Name).ToList();
+
+            var sheet = workbook.Worksheets.Add("usuarios");
+
+            //escribo los encabezados.
+            for (int i = 0; i < propertyNames.Count; i++)
+            {
+                sheet.Cell(1, i + 1).Value = propertyNames[i];
+                sheet.Cell(1, i + 1).Style.Font.SetBold();
+
+            }
+            sheet.Column(1).Width = 5;
+            sheet.Column(2).Width = 35;
+            sheet.Column(3).Width = 35;
+            sheet.Column(4).Width = 20;
+            sheet.Column(5).Width = 20;
+            sheet.Column(6).Width = 20;
+            sheet.Column(7).Width = 20;
+            sheet.Column(8).Width = 20;
+            // escribo las filas.
+            var rowData = Users.ToList();
+            for (int rowIndex = 0; rowIndex < rowData.Count; rowIndex++)
+            {
+                for (int colIndex = 0; colIndex < propertyNames.Count; colIndex++)
+                {
+                    var propertyName = propertyNames[colIndex];
+                    var propertyValue = typeof(User).GetProperty(propertyName)?.GetValue(rowData[rowIndex])?.ToString();
+                    sheet.Cell(rowIndex + 2, colIndex + 1).Value = propertyValue;
+                }
+            }
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                await JS.InvokeAsync<object>("saveExcel", "usuarios.xlsx", stream.ToArray());
+            }
+        }
+
+
+    }
+
+    private async Task<List<User>> LoadData()
+    {
+        isLoading = true;
+        var watch = Stopwatch.StartNew();
+
+        using(httpClient = new HttpClient())
+        {       
+            var url = $"http://localhost:5002/api/users";
+            var respuesta = await httpClient.GetAsync(url);
+            var rptString = await respuesta.Content.ReadAsStringAsync();
+            var lista = JsonSerializer.Deserialize<List<User>>(rptString, new JsonSerializerOptions()
+            {PropertyNameCaseInsensitive = true});
+            watch.Stop();
+            timeQuery = watch.Elapsed;
+            isLoading = false;
+            if (lista is not null)
+            {
+                return lista;
+            }
+            else
+            {
+                return new List<User>();    
+            }
+        }
+
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeAsync<object>("DataTableUnload", "#TableUsers");
+    }
+
+    public class Usuario
+    {
+        [Index(0)]
+        public string Id { get; set; } = null!;
+        [Index(1)]
+        public string Name { get; set; } = null!;
+        [Index(3)]
+        public int Age { get; set; }
+        [Index(4)]
+        public DateTime BirthDay { get; set; }
+        [Index(5)]
+        public string TypeUser { get; set; } = null!;
+        [Index(6)]
+        public Boolean Active { get; set; }
+
+    }
+}

@@ -1,0 +1,235 @@
+﻿@page "/components/importexcel"
+
+@using Digesett.Shared.Models
+@using System.Data
+@using NPOI.XSSF.UserModel
+@using NPOI.SS.UserModel
+@using System.Text.Json
+@using System.Text
+@inject IJSRuntime JS
+@inject HttpClient httpClient
+@inject SweetAlertService Swal
+
+<h3>Importar datos desde Excel</h3>
+
+<div class="row mb-5">
+    <div class="col">
+        <InputFile OnChange="@ImportExcelFile" class="btn btn-warning" />
+    </div>
+    <div class="col">
+        <button class="btn btn-primary shadow-sm" @onclick="SendDataEmployee">Carga Empleados</button>
+        <button class="btn btn-primary shadow-sm" @onclick="loadDepart">Cargar Departamentos</button>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <p class="fw-bold">loading...</p>
+}
+else
+{
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <table class="table table-bordered table-striped shadow table-responsive-sm" id="TableExcel">
+                    <thead>
+                        <tr>
+                            @foreach (DataColumn col in dt.Columns)
+                            {
+                                <th>@col.ColumnName</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (DataRow row in dt.Rows)
+                        {
+                            <tr>
+                                @foreach (DataColumn column in dt.Columns)
+                                {
+                                    <td>@row[column.ColumnName]</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    //funcion para administrar excel.
+    DataTable dt = new DataTable();
+    List<Employee> empleados = new();
+    List<Departament> departs = new();
+
+    public bool isLoading { get; set; }
+
+    async Task SendDataEmployee()
+    {
+        isLoading = true;
+        empleados.Clear();
+        foreach (DataRow row in dt.Rows)
+        {
+            Boolean gen = (Convert.ToString(row[3]) == "1") ? true : false;
+
+            Employee emplo = new Employee()
+            {
+                // Id = Convert.ToInt32(row[0]), 
+                // IdentificationNumber = Convert.ToString(row[1])!,
+                // Name = Convert.ToString(row[2])!,
+                // Genero = gen,
+                // Title = Convert.ToString(row[4])!,
+                // BirthDate = Convert.ToDateTime(row[5]),
+                // PhoneNumber = Convert.ToString(row[6])!,
+                // MobileNumber= Convert.ToString(row[7])!,
+                // Direction = Convert.ToString(row[9])!,
+                // IdDepartment = Convert.ToString(row[10])!,
+                // Cargo = Convert.ToString(row[11])!,
+                // Departament="sistemas",
+                // Email="devsoftware.etiquetas@gmail.com",
+                // Salary=100,
+                // Sexo=true,
+                // Active=true
+            };
+            empleados.Add(emplo);
+        }
+
+        using (httpClient = new HttpClient())
+        {
+            var url = $"http://localhost:5002/api/Employee";
+            var jsonserialoptions = new JsonSerializerOptions() { PropertyNameCaseInsensitive = true };
+
+
+            var json = JsonSerializer.Serialize(empleados);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var respuesta = await httpClient.PostAsync(url, content);
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                await Swal.FireAsync("error", respuesta.RequestMessage!.ToString(), SweetAlertIcon.Error);
+            }
+        }        
+        isLoading = false;
+    }
+
+    async Task loadDepart()
+    {
+        isLoading = true;
+        departs.Clear();
+        int rowIndex = 2;
+        foreach (DataRow row in dt.Rows)
+        {
+            Departament departament = new Departament()
+            {
+                IdDepartament = rowIndex,
+                IdParent = 1,
+                Comment = Convert.ToString(row[0])!,
+                Name = Convert.ToString(row[2])!
+            };
+            rowIndex++;
+            departs.Add(departament);
+        }
+
+        using (httpClient = new HttpClient())
+        {
+            var url = $"http://localhost:5002/api/excel/loaddepartament";
+            var jsonserialoptions = new JsonSerializerOptions() { PropertyNameCaseInsensitive = true };
+            var json = JsonSerializer.Serialize(departs);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var respuesta = await httpClient.PostAsync(url, content);
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                await Swal.FireAsync("error", respuesta.RequestMessage!.ToString(), SweetAlertIcon.Error);
+            }
+        }
+        isLoading = false;
+    }
+
+    async Task ImportExcelFile(InputFileChangeEventArgs e)
+    {
+
+        //objetos filestream y memorystream
+        isLoading = true;
+        var fileStream = e.File.OpenReadStream();
+        var ms = new MemoryStream();
+        await fileStream.CopyToAsync(ms);
+        fileStream.Close();
+        ms.Position = 0;
+
+        //tranbajos con la hoja.
+        ISheet sheet;
+        var xsswb = new XSSFWorkbook(ms);
+        sheet = xsswb.GetSheetAt(0);
+        IRow hr = sheet.GetRow(0);
+        var rl = new List<string>();
+        int cc = hr.LastCellNum;
+        for (var j = 0; j < cc; j++)
+        {
+            ICell cell = hr.GetCell(j);
+            dt.Columns.Add(cell.ToString());
+        }
+
+        for (var j = (sheet.FirstRowNum + 1); j <= sheet.LastRowNum; j++)
+        {
+            var r = sheet.GetRow(j);
+            for (var i = r.FirstCellNum; i < cc; i++)
+            {
+                rl.Add(r.GetCell(i).ToString()!);
+            }
+            if (rl.Count > 0)
+            {
+                dt.Rows.Add(rl.ToArray());
+            }
+            rl.Clear();
+        }
+        isLoading = false;
+        await JS.InvokeAsync<object>("DataTableLoad", "#TableExcel");
+
+    }
+    //fin de la funcion para importar excel.
+
+    public void WriteExcel()
+    {
+
+
+        DataTable table = (DataTable)JsonSerializer.Deserialize(JsonSerializer.Serialize(empleados),
+             (typeof(DataTable)))!;
+
+
+        var memoryStream = new MemoryStream();
+        using (var fs = new FileStream("Result.xlsx",FileMode.Create, FileAccess.Write))
+        {
+            IWorkbook workbook = new XSSFWorkbook();
+            ISheet excelSheet = workbook.CreateSheet("sheet1");
+
+            List<string> columns = new List<string>();
+            IRow row = excelSheet.CreateRow(0);
+            int columnIndex = 0;
+
+            foreach (DataColumn column in table!.Columns)
+            {
+                columns.Add(column.ColumnName);
+                row.CreateCell(columnIndex).SetCellValue(column.ColumnName);
+                columnIndex++;
+            }
+            int rowIndex = 1;
+            foreach (DataRow dsrow in table.Rows)
+            {
+                row = excelSheet.CreateRow(rowIndex);
+                int cellIndex = 0;
+                foreach (String col in columns)
+                {
+                    row.CreateCell(cellIndex).SetCellValue(dsrow[col].ToString());
+                    cellIndex++;
+                }
+
+                rowIndex++;
+            }
+            workbook.Write(fs);
+        }
+    }
+}

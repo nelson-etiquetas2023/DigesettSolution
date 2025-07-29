@@ -1,0 +1,5 @@
+@Digesett.Server_HostAddress = http://localhost:8500
+GET {{Digesett.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

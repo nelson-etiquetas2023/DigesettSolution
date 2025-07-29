@@ -1,0 +1,164 @@
+﻿@page "/usuario/delete/{id:int}"
+@using Digesett.Shared.Models
+@using System.Text.Json
+@inject HttpClient httpClient
+@inject SweetAlertService Swal
+@inject NavigationManager navigator
+
+<div class="row">
+    <div class="col d-flex justify-content-start">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-person-x me-2" viewBox="0 0 16 16">
+            <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z" />
+            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m-.646-4.854.646.647.646-.647a.5.5 0 0 1 .708.708l-.647.646.647.646a.5.5 0 0 1-.708.708l-.646-.647-.646.647a.5.5 0 0 1-.708-.708l.647-.646-.647-.646a.5.5 0 0 1 .708-.708" />
+        </svg>
+        <h1>Eliminar Usuario</h1>
+    </div>
+</div>
+
+
+
+@if (user is null)
+{
+    <p>loading...</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-6">
+            <div class="form-group mb-3">
+                <label class="fw-bold">Id :</label>
+                <input type="text" class="form-control shadow fw-bold" readonly id="Id" @bind-value="@user.Id" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Nombre del Usuario :</label>
+                <input type="text" class="form-control shadow fw-bold" id="name" @bind-value="@user.Name" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Correo</label>
+                <input type="email" @bind-value="user.Email" class="form-control shadow" id="email" readonly />
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="fw-bold">Deparatamento :</label>
+                <input type="text" @bind-value="user.Departament" class="form-control shadow" id="departament" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Cargo:</label>
+                <input type="text" @bind-value="user.Cargo" class="form-control shadow" placeholder="Introduzca el cargo de trabajo" id="cargo" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Tipo de Usuario :</label>
+                <input type="text" @bind-value="user.TypeUser" class="form-control shadow" id="tipo" readonly />
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="fw-bold">Telefono:</label>
+                <input type="text" @bind-value="user.Phone" class="form-control shadow" placeholder="Introduzca el numero telefonico" id="telefono" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <InputCheckbox class="form-check-input shadow" @bind-Value="@user.Active" />
+                <label>Contacto Activo</label>
+            </div>
+
+            <div class="row mt-5">
+                <div class="col d-flex  justify-content-start">
+                    <button class="btn btn-primary me-2 shadow" @onclick="DeleteUsers"><i class="bi bi-floppy-fill me-2"></i>Borrar Usuario</button>
+                    <a href="../usuario/index" class="btn btn-warning shadow"><i class="bi bi-box-arrow-right me-2"></i>Salir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    public User user { get; set; } = null!;
+
+    public List<Departament> departaments = new(){
+            new Departament(){ IdDepartament=1,Name="Sistemas"},
+            new Departament(){ IdDepartament=2,Name="Recursos Humanos"},
+            new Departament(){ IdDepartament=3,Name="Gerencia"}
+        };
+
+    public List<TypeUser> TiposUsuario = new(){
+            new TypeUser(){ Id=1,Name="Super Admin"},
+            new TypeUser(){ Id=2,Name="Admin"},
+            new TypeUser(){ Id=3,Name="User"},
+            new TypeUser(){ Id=4,Name="Invitado"}
+        };
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        user = await LoadData();
+    }
+
+    private async Task<User> LoadData()
+    {
+        using (httpClient = new HttpClient())
+        {
+            try
+            {
+                var url = $"http://localhost:5002/api/users/" + id;
+                var respuesta = await httpClient.GetAsync(url);
+                var rptString = await respuesta.Content.ReadAsStringAsync();
+                var item = JsonSerializer.Deserialize<User>(rptString, new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                return (item is not null ? item : new User { Id = -1, Name = "user not found..." });
+            }
+            catch (HttpRequestException httpEx)
+            {
+                await Swal.FireAsync("error", httpEx.Message, SweetAlertIcon.Error);
+                return new User { Id = -1, Name = "user not found..." };
+            }    
+        }
+    }
+
+    private async Task DeleteUsers()
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+        {
+            
+            Title="Esta seguro de eliminar este registro?",
+            Text="No podrá revertir los cambios...",
+            ShowCancelButton = true,
+            ConfirmButtonText = "Si, Borralo!",
+            CancelButtonText = "No, cancela"
+        });
+
+        if (!string.IsNullOrEmpty(result.Value))
+        {
+            using (httpClient = new HttpClient())
+            {
+                try
+                {
+                    var url = "http://localhost:5002/api/Users/" + id;
+                    httpClient.DefaultRequestHeaders.Clear();
+                    var respuesta = await httpClient.DeleteFromJsonAsync<User>(url);
+                }
+                catch (HttpRequestException httpEx)
+                {
+                    await Swal.FireAsync("error", httpEx.Message, SweetAlertIcon.Error);
+                }
+            }
+            await Swal.FireAsync("Usuario eliminado!", "El usuario ha sido eliminado definitivamente.",
+                SweetAlertIcon.Warning);
+        }
+        else if (result.Dismiss == DismissReason.Cancel)
+        {
+            await Swal.FireAsync("Cancelado","el registro no fue eliminado",SweetAlertIcon.Error);
+            
+        }
+
+
+
+
+        
+        navigator.NavigateTo("../usuario/index");
+    }
+}

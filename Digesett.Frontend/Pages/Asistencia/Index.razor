@@ -1,0 +1,266 @@
+﻿@page "/asistencia/index"
+@using Digesett.Frontend.Pages.Components
+@using Digesett.Shared.Models
+@using System.Text.Json
+@using System.Diagnostics
+@using System.Globalization
+@using CsvHelper
+@using ClosedXML.Excel
+@inject SweetAlertService Swal
+@inject IJSRuntime JS
+@inject HttpClient httpClient
+@inject IEmployeeService employeeService
+@implements IAsyncDisposable
+
+<h1>Integracion con Sistema Control de Asistencia-BIOADMIN</h1>
+
+<div class="row">
+    <div class="col-4 mb-3">
+        <label class="fw-bold" >Fecha desde: </label>
+        <InputDate Type="InputDateType.DateTimeLocal"
+        min="@DateTime.Today.ToString("dd-MM-yyyy")" @bind-Value="@tdesde" class="form-control shadow mb-2" />
+        <label class="fw-bold">Fecha hasta: </label>
+        <InputDate Type="InputDateType.DateTimeLocal"
+        min="@DateTime.Today.ToString("dd-MM-yyyy")" @bind-Value="@thasta" class="form-control shadow mb-2" />
+    </div>
+    <div class="col-4">
+        <strong><span>Tiempo de Consulta :@TimeQuery.TotalSeconds</span></strong>
+    </div>
+    <div class="row mb-2">
+        <div class="col d-flex justify-content-start">
+            <button class="btn btn-primary shadow me-2" @onclick="LoadData">Cargar Datos</button>
+            <button class="btn btn-primary shadow me-2" @onclick="ExportCsv">Exportar Csv</button>
+            <button class="btn btn-primary shadow me-2" @onclick="ExportExcel" >Exportar Excel</button>
+            <button class="btn btn-primary shadow me-2" @onclick="ExportPdf">Exportar Pdf</button>
+            <button class="btn btn-info shadws me-2" @onclick="GetWarnings">Tardanzas</button>
+        </div>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <table class="table table-bordered table-striped shadow" id="tablePonches" style="font-size: 12px">
+        <thead>
+            <tr>
+                <th>Codigo Empleado</th>
+                <th>Nombre Empleado</th>
+                <th>Departamento</th>
+                <th>Cargo</th>
+                <th>Fecha</th>
+                <th>Dia</th>
+                <th>Ponche Entrada</th>
+                <th>Ponche Salida</th>
+                <th>Horario</th>
+                <th>Horario Entrada</th>
+                <th>Horario Salida</th>
+                <th>Tardanza</th>
+                <th class="hideColumns"></th>
+                <th class="hideColumns"></th>
+                <th class="hideColumns"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (ponches.Count >= 0)
+            {
+                @foreach (var item in ponches)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td>@item.Empleado</td>
+                        <td>@item.Departamento</td>
+                        <td>@item.Cargo</td>
+                        <td>@item.RecordTime.ToShortDateString()</td>
+                        <td>@item.StringNameDate</td>
+                        <td>@item.Marca1</td>
+                        <td>@item.Marca2</td>
+                        <td>@item.ShiftName</td>
+                        <td>@item.ShiftStart</td>
+                        <td>@item.ShiftEnd</td>
+                        <td>@item.Delay</td>
+                        <td class="hideColumns">@item.valor1</td>
+                        <td class="hideColumns">@item.valor2</td>
+                        <td class="hideColumns">@item.FlagDelay</td>
+                    </tr>   
+                }
+            }
+        </tbody>
+    </table>
+    <br />
+    <strong>Parametros:</strong>
+    <br />
+
+    <div class="row">
+
+        <div class="col-4">
+            <label>Tiempo minimo despues del marcaje: </label>
+            <input type="text" class="form-control" @bind-value="timeLapse" />
+        </div>
+
+    </div>
+
+
+
+
+}
+
+@code {
+    public DateTime tdesde { get; set; } = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    public DateTime thasta { get; set; } = new DateTime(DateTime.Today.Year, DateTime.Today.Month,1).AddMonths(1).AddDays(-1);
+    public List<PoncheRegistro> ponches { get; set; } = new(); 
+    public bool isLoading;
+    public bool DtPaint = false;
+    public TimeSpan TimeQuery { get; set; }
+    private ParametroShift parametroShift = new();
+    private int timeLapse = 15;
+
+
+
+    private async Task GetWarnings() 
+    {
+        foreach (var item in ponches) 
+        {
+            //Conversion de la cadena del ponche 1 a enteros de hora-minutos-segundos.
+            TimeSpan TimeMark1 = TimeSpan.Parse(item.Marca1);
+            int horaMark1 = TimeMark1.Hours;               
+            int minutosMark1 = TimeMark1.Minutes;
+            int segundosMark1 = TimeMark1.Seconds;
+            DateTime DtShiftStart = new(item.RecordTime.Year, item.RecordTime.Month, 
+                item.RecordTime.Day,item.ShiftStart,0, 0);
+            DateTime DtMark1 = new(item.RecordTime.Year, item.RecordTime.Month, 
+                item.RecordTime.Day, horaMark1,minutosMark1, segundosMark1);
+            //calculo de la tardanza
+            item.Delay = (DtMark1.AddMinutes(timeLapse * (-1)) - DtShiftStart);
+            item.valor1 = DtMark1;
+            item.valor2 = DtShiftStart;
+            //validar los valores negativos marcajes antes de la hora de entrada.
+            if (item.Delay.Minutes < 0) 
+            {
+                item.Delay = new TimeSpan(0, 0, 0, 0);
+            }
+            if (item.Delay.Minutes > 0) 
+            {
+                item.FlagDelay = true;
+            }
+        }
+        await JS.InvokeAsync<object>("DatatableNotify", "#tablePonches");
+    }
+
+    private async Task LoadData()
+    {
+        //cambio a formto sql-server
+        string date1 = tdesde.ToString("MM/dd/yyyy");
+        string date2 = thasta.ToString("MM/dd/yyyy");
+        isLoading = true;
+        var watch = Stopwatch.StartNew();
+        //hay que pasarle la fecha con formato MM/dd/yyyy para que pueda funcionar.
+        var url = $"http://localhost:5002/Api/Attendance?startDate={date1}&endDate={date2}";
+        using (var httpClient = new HttpClient())
+        {
+            var respuesta = await httpClient.GetAsync(url);
+            var rptString = await respuesta.Content.ReadAsStringAsync();
+            ponches = JsonSerializer.Deserialize<List<PoncheRegistro>>(rptString, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true })!;
+        }
+        //buscar los horarios
+        ponches = await employeeService.GetShiftsEmployees(ponches);
+        if (!DtPaint)
+        {
+            await JS.InvokeAsync<object>("DataTableInitPonches", "#tablePonches", ponches);
+            DtPaint = true;
+        }
+        else
+        {
+            await JS.InvokeAsync<object>("DataTableRepaint", "#tablePonches");
+
+        }
+        watch.Stop();
+        TimeQuery = watch.Elapsed;
+        isLoading = false;
+       
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeAsync<object>("DataTableUnload", "#tablePonches");
+    }
+    async Task ExportCsv()
+    {
+        var memoryStream = new MemoryStream();
+        await using (var writer = new StreamWriter(memoryStream))
+        await using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+        {
+            await csv.WriteRecordsAsync(ponches);
+        }
+        var arr = memoryStream.ToArray();
+        await JS.InvokeAsync<object>("saveAsFile", "RegistrosMarcas.csv", Convert.ToBase64String(arr));
+    }
+    async Task ExportExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            var propertyNames = typeof(PoncheRegistro).GetProperties().Select(p => p.Name).ToList();
+
+            //Eliminando columna que no se quieren en el reporte de excel
+            var colindexdelete = propertyNames[3];
+            var colindex2 = propertyNames[7];
+            var colindex3 = propertyNames[8];
+            propertyNames.Remove(colindexdelete);
+            propertyNames.Remove(colindex2);
+            propertyNames.Remove(colindex3);
+
+            var sheet = workbook.Worksheets.Add("registro_asistencia");
+
+            //escribo los encabezados.
+            for (int i = 0; i < propertyNames.Count; i++)
+            {
+                sheet.Cell(1, i + 1).Value = propertyNames[i];
+                sheet.Cell(1, i + 1).Style.Font.SetBold();
+            }
+
+            //Configurar los encabezados de las columnas.
+            sheet.Cell(1, 1).Value = "Codigo del Empleado";
+            sheet.Cell(1, 2).Value = "Nombre del Empleado";
+            sheet.Cell(1, 3).Value = "Fecha Marcaje";
+            sheet.Cell(1, 4).Value = "Dia Semana";
+            sheet.Cell(1, 5).Value = "Entrada";
+            sheet.Cell(1, 6).Value = "Salida";
+            sheet.Cell(1, 7).Value = "Numero Ponches";
+            sheet.Column(1).Width = 23;
+            sheet.Column(2).Width = 35;
+            sheet.Column(3).Width = 10;
+            sheet.Column(4).Width = 20;
+            sheet.Column(5).Width = 18;
+            sheet.Column(6).Width = 18;
+            sheet.Column(8).Width = 40;
+            sheet.Column(9).Width = 50;
+            // escribo las filas.
+            var rowData = ponches.ToList();
+            for (int rowIndex = 0; rowIndex < rowData.Count; rowIndex++)
+            {
+                for (int colIndex = 0; colIndex < propertyNames.Count; colIndex++)
+                {
+                    var propertyName = propertyNames[colIndex];
+                    var propertyValue = typeof(PoncheRegistro).GetProperty(propertyName)?.GetValue(rowData[rowIndex])?.ToString();
+                    sheet.Cell(rowIndex + 2, colIndex + 1).Value = propertyValue;
+                }
+            }
+
+          
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                await JS.InvokeAsync<object>("saveExcel", "asistencia.xlsx", stream.ToArray());
+            }
+        }
+    }
+    async Task ExportPdf()
+    {
+        var date = DateTime.Today.ToShortDateString();
+        var hora = DateTime.Now.ToLongTimeString();
+        await JS.InvokeVoidAsync("GenerarPDF", date, hora, JsonSerializer.Serialize(ponches), tdesde.ToShortDateString(), thasta.ToShortDateString());
+    }   
+}
+

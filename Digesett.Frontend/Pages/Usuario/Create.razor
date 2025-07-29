@@ -1,0 +1,133 @@
+﻿@page "/usuario/create"
+@using Digesett.Shared.Models
+@inject HttpClient httpClient
+@inject SweetAlertService Swal
+@inject NavigationManager navigator
+
+
+
+<div class="row">
+    <div class="col d-flex justify-content-start">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-person-plus me-2 mb-3" viewBox="0 0 16 16">
+            <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
+            <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5" />
+        </svg>
+        <h1>Crear Usuarios</h1>
+
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-6">
+
+        <EditForm Model="@user" OnValidSubmit="@SaveUsers" FormName="formUsers">
+            <DataAnnotationsValidator></DataAnnotationsValidator>
+            <ValidationSummary></ValidationSummary>
+
+            <div class="form-group mb-3">
+                <label class="fw-bold">Nombre de Usuario:</label>
+                <input type="text" @bind-value="user.Name" class="form-control shadow" placeholder="Introduzca el nombre del usuario" id="name" />
+                <ValidationMessage For="@(() => user.Name)"></ValidationMessage>
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Correo</label>
+                <input type="email" @bind-value="user.Email" class="form-control shadow" placeholder="Introduzca el correo electronico" id="email" />
+                <ValidationMessage For="@(() => user.Email)"></ValidationMessage>
+
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Contraseña:</label>
+                <input type="password" @bind-value="user.Password" class="form-control shadow" placeholder="Introduzca a contraseña del usuario" id="password" />
+                <ValidationMessage For="@(() => user.Password)"></ValidationMessage>
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Departamento:</label>
+                <InputSelect class="form-select shadow" @bind-Value="user.Departament">
+                    <option value="" selected>Seleccione un departamento</option>
+                    @foreach (var item in departaments)
+                    {
+                        <option value="@item.Name">@item.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => user.Departament)"></ValidationMessage>
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Cargo:</label>
+                <input type="text" @bind-value="user.Cargo" class="form-control shadow" placeholder="Introduzca el cargo de trabajo" id="cargo" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Tipo de Usuario:</label>
+                <InputSelect class="form-select shadow" @bind-Value="user.TypeUser">
+                    <option value="" selected>Seleccione el Tipo de Usuario</option>
+                    @foreach (var item in TiposUsuario)
+                    {
+                        <option value="@item.Name">@item.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => user.TypeUser)"></ValidationMessage>
+            </div>
+            <div class="form-group mb-3">
+                <label class="fw-bold">Telefono:</label>
+                <input type="text" @bind-value="user.Phone" class="form-control shadow" placeholder="Introduzca el numero telefonico" id="telefono" />
+            </div>
+            <div class="row mt-5" style="display:flex;align-content:center;align-items:center;">
+                <div class="col-6">
+                    <button type="submit" class="btn btn-primary me-2 shadow"><i class="bi bi-floppy-fill me-2"></i>Guardar</button>
+                    <a href="../usuario/index" class="btn btn-warning shadow"><i class="bi bi-box-arrow-right me-2"></i>Volver</a>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+
+@code {
+
+    public User user { get; set; } = new();
+    public List<Departament> departaments = new();
+    public List<TypeUser> TiposUsuario = new();
+
+    protected override void OnInitialized()
+    {
+        LoadDataComboBox();
+    }
+
+    public async Task SaveUsers()
+    {
+        using (httpClient = new HttpClient())
+        {
+            var url = $"http://localhost:5002/api/users";
+            httpClient.DefaultRequestHeaders.Clear();
+            try
+            {
+                var repuesta = await httpClient.PostAsJsonAsync<User>(url, user);
+                var rptString = await repuesta.Content.ReadAsStringAsync();
+            }
+            catch (HttpRequestException ex)
+            {
+                await Swal.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            }
+        }
+        navigator.NavigateTo("../usuario/index");
+    }
+
+    public void LoadDataComboBox()
+    {
+
+        departaments = new()
+        {
+            new Departament(){ IdDepartament=1,Name="Sistemas"},
+            new Departament(){ IdDepartament=2,Name="Recursos Humanos"},
+            new Departament(){ IdDepartament=3,Name="Gerencia"}
+        };
+
+        TiposUsuario = new()
+        {
+            new TypeUser(){ Id=1,Name="Super Admin"},
+            new TypeUser(){ Id=2,Name="Admin"},
+            new TypeUser(){ Id=3,Name="User"},
+            new TypeUser(){ Id=4,Name="Invitado"}
+        };
+    }
+}

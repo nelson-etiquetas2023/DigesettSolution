@@ -1,0 +1,39 @@
+﻿.lightRed {
+    background-color: #fe2d00 !important;
+    border: 1px solid #FF6666;
+}
+.rojoBasico {
+    background-color: #FF0000 !important;
+    border: 1px solid #FF6666;
+}
+.rojoFuego {
+    background-color: #FF4500 !important;
+    border: 1px solid #FF6666;
+}
+.rojoTomate {
+    background-color: #FF6347 !important;
+    border: 1px solid #FF6666;
+}
+.rojoCarmesi {
+    background-color: #DC143C !important;
+    border: 1px solid #FF6666;
+}
+.rojoLadrillo {
+    background-color: #B22222 !important;
+    border: 1px solid #FF6666;
+}
+.rojoLadrillo {
+    background-color: #B22222 !important;
+    border: 1px solid #FF6666;
+}
+.lightYellow {
+    background-color: #B22222 !important;
+    border: 1px solid #FF6666;
+}
+.hideColumns {
+    display:none;
+}
+
+
+
+

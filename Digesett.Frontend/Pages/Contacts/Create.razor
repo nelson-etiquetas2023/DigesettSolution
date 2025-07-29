@@ -1,0 +1,51 @@
+﻿@page "/contacts/create"
+@using Digesett.Shared.Models
+@inject HttpClient httpClient
+@inject SweetAlertService Swal
+@inject NavigationManager navigator
+
+    <h3>Crear Contacto</h3>
+    <div class="form-group mb-3">
+        <label>Nombre del Contacto:</label>
+        <input type="text" class="form-control shadow" id="name" @bind-value="@Contacto.Name" />
+    </div>
+    <div class="form-group mb-3">
+        <label>Correo Electronico:</label>
+        <input type="email" class="form-control shadow" id="email" @bind-value="@Contacto.Correo"  />
+    </div>
+    <div class="form-group mb-3">
+        <label>Cargo:</label>
+        <input type="text" class="form-control shadow" id="cargo" @bind-value="@Contacto.Cargo" />
+    </div>
+    <div class="form-group mb-3">
+        <label>Departamento:</label>
+        <input type="text" class="form-control shadow" id="departamento" @bind-value="@Contacto.Departamento" />
+    </div>
+    <button class="btn btn-primary" @onclick="SaveContacts">Guardar</button>
+
+
+@code {
+    public Contact Contacto { get; set; } = new();
+
+    private async Task SaveContacts()
+    {
+        using (httpClient = new HttpClient())
+        {
+            string url = "http://localhost:5002/api/Contacts";
+            httpClient.DefaultRequestHeaders.Clear();
+
+            try
+            {
+                var response = await httpClient.PostAsJsonAsync<Contact>(url, Contacto);
+                var Respuesta = response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                await Swal.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+
+            }
+        }
+        navigator.NavigateTo("../contacts/index");
+    }
+}
+

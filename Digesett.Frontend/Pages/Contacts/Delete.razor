@@ -1,0 +1,96 @@
+﻿@page "/contacts/delete/{id:int}"
+@using System.Text.Json
+@using Digesett.Shared.Models
+@inject HttpClient httpClient
+@inject SweetAlertService Swal
+@inject NavigationManager navigator
+
+<h3>Eliminar Contacto</h3>
+@if (Contacto is null)
+{
+    <p>Cargando el contacto...@id</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-6">
+            <div class="form-group mb-3">
+                <label>Id :</label>
+                <input type="text" class="form-control shadow fw-bold" readonly id="Id" @bind-value="@Contacto.Id" />
+            </div>
+            <div class="form-group mb-3">
+                <label>Nombre del Contacto :</label>
+                <input type="text" class="form-control shadow fw-bold" id="name" @bind-value="@Contacto.Name" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <label>Cargo :</label>
+                <input type="text" class="form-control shadow fw-bold" id="cargo" @bind-value="@Contacto.Cargo" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <label>Departamento :</label>
+                <input type="text" class="form-control shadow fw-bold" id="departamento" @bind-value="@Contacto.Departamento" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <label>Correo :</label>
+                <input type="email" class="form-control shadow fw-bold" id="correo" @bind-value="@Contacto.Correo" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <InputCheckbox class="form-check-input shadow" @bind-Value="@Contacto.Active" />
+                <label>Contacto Activo</label>
+            </div>
+            <button class="btn btn-primary shadow mt-5" @onclick="SaveContacts">Eliminar Contacto</button>
+        </div>
+    </div>   
+}
+
+@code {
+
+    [Parameter]
+    public int id { get; set; }
+    public Contact Contacto { get; set; } = null!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Contacto = await LoadData();
+    }
+
+    private async Task<Contact> LoadData()
+    {
+
+        var url = "http://localhost:5002/api/Contacts/" + id;
+        using (httpClient = new HttpClient())
+        {
+            var respuesta = await httpClient.GetAsync(url);
+            var resString = await respuesta.Content.ReadAsStringAsync();
+            var item = JsonSerializer.Deserialize<Contact>(resString, new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            return (item is not null) ? item : new Contact { Id = -1, Name = "registro no encontrado..." };
+        }
+
+    }
+
+    private async Task SaveContacts()
+    {
+        using (httpClient = new HttpClient())
+        {
+            try
+            {
+                var url = "http://localhost:5002/api/Contacts/" + id;
+                httpClient.DefaultRequestHeaders.Clear();
+                var respuesta = await httpClient.DeleteFromJsonAsync<Contact>(url);
+            }
+            catch (HttpRequestException httpEx)
+            {
+                await Swal.FireAsync("error", httpEx.Message, SweetAlertIcon.Error);
+            }
+        }
+        navigator.NavigateTo("../contacts/index");
+    }
+
+
+
+
+
+}
