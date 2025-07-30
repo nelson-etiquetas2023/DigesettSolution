@@ -161,7 +161,7 @@ else
 
         using(httpClient = new HttpClient())
         {       
-            var url = $"http://localhost:5002/api/users";
+            var url = $"http://172.16.0.18:2030/api/users";
             var respuesta = await httpClient.GetAsync(url);
             var rptString = await respuesta.Content.ReadAsStringAsync();
             var lista = JsonSerializer.Deserialize<List<User>>(rptString, new JsonSerializerOptions()

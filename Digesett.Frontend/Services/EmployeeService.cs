@@ -1,8 +1,6 @@
 ﻿using CurrieTechnologies.Razor.SweetAlert2;
 using Digesett.Shared.Models;
 using Microsoft.JSInterop;
-using NPOI.XSSF.UserModel;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -18,7 +16,7 @@ namespace Digesett.Frontend.Services
 
         public async Task<List<Employee>> GetEmployees()
         {
-            var url = $"http://localhost:5002/Api/Employee";
+            var url = $"http://172.16.0.18:2030/Api/Employee";
             var respuesta = await HttpClient.GetAsync(url);
             var respuestaString = await respuesta.Content.ReadAsStringAsync();
             Employees = JsonSerializer.Deserialize<List<Employee>>(respuestaString,jsonOptions)!;
@@ -35,7 +33,7 @@ namespace Digesett.Frontend.Services
 
            
             //endpoint que procesa la peticion de actualizar bioadmin.
-            var url = $"http://localhost:5002/api/Employee/ActualizarStatus";
+            var url = $"http://172.16.0.18:2030/api/Employee/ActualizarStatus";
 
             //hacemos la peticion al secver
             var httpclient = new HttpClient();
@@ -54,7 +52,7 @@ namespace Digesett.Frontend.Services
         }
         public async Task VerificarPeriodosVencidos()
         {
-            var url = @"http://localhost:5002/api/employee/ExceptionVerifyOut";
+            var url = @"http://172.16.0.18:2030/api/employee/ExceptionVerifyOut";
             var respuesta = await HttpClient.GetAsync(url);
             var rptaString = await respuesta.Content.ReadAsStringAsync();
             var lista = JsonSerializer.Deserialize<List<Employee>>(rptaString,jsonOptions);
@@ -78,7 +76,7 @@ namespace Digesett.Frontend.Services
 
             }
             //endpoint para actualizar el bioadmin y reingresar las personas que se le vencio el periodo
-            var url = $"http://localhost:5002/api/Employee/actualizarPeriodos";
+            var url = $"http://172.16.0.18:2030/api/Employee/actualizarPeriodos";
             //hacemos la peticion al server.
             var httpclient = new HttpClient();
             var jsonContent = JsonSerializer.Serialize(lista, jsonOptions);
@@ -96,7 +94,7 @@ namespace Digesett.Frontend.Services
         public async Task<bool> VerificarEmployeeNewBioAdmin(List<Employee> empleados)
         {
             
-            var url = $"http://localhost:5002/api/Employee/VerificarEmployeeNewBioAdmin";
+            var url = $"http://172.16.0.18:2030/api/Employee/VerificarEmployeeNewBioAdmin";
             var httpclient = new HttpClient();
             var jsonContent = JsonSerializer.Serialize(empleados, jsonOptions);
             var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
@@ -117,7 +115,7 @@ namespace Digesett.Frontend.Services
             nomina.ForEach(x => x.Activo = true);
             nomina.ForEach(x => x.IdDepart = "1");
             //llenar la lista desde bioadmin.
-            var url = $"http:/localhost:5002/api/employee/CheckEmpleadosCancelados";
+            var url = $"http://172.16.0.18:2030/api/employee/CheckEmpleadosCancelados";
             var httpclient = new HttpClient();
             var jsonContent = JsonSerializer.Serialize(nomina, jsonOptions);
             var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
@@ -136,7 +134,7 @@ namespace Digesett.Frontend.Services
             ponches.ForEach(x => x.ShiftName="Sin Asignar.");
             ponches.ForEach(x => x.ShiftStart = 0);
             ponches.ForEach(x => x.ShiftEnd = 0);
-            var url = $"http://localhost:5002/api/employee/GetHorariosEmpleados";
+            var url = $"http://172.16.0.18:2030/api/employee/GetHorariosEmpleados";
             var jsonContent = JsonSerializer.Serialize(ponches, jsonOptions);
             var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
             var httpclient = new HttpClient();

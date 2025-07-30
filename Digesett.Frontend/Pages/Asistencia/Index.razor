@@ -101,10 +101,6 @@ else
         </div>
 
     </div>
-
-
-
-
 }
 
 @code {
@@ -116,8 +112,6 @@ else
     public TimeSpan TimeQuery { get; set; }
     private ParametroShift parametroShift = new();
     private int timeLapse = 15;
-
-
 
     private async Task GetWarnings() 
     {
@@ -157,7 +151,7 @@ else
         isLoading = true;
         var watch = Stopwatch.StartNew();
         //hay que pasarle la fecha con formato MM/dd/yyyy para que pueda funcionar.
-        var url = $"http://localhost:5002/Api/Attendance?startDate={date1}&endDate={date2}";
+        var url = $"http://172.16.0.18:2030/Api/Attendance?startDate={date1}&endDate={date2}";
         using (var httpClient = new HttpClient())
         {
             var respuesta = await httpClient.GetAsync(url);
