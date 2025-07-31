@@ -72,7 +72,7 @@ else
 
     private async Task<List<Contact>> LoadData()
     {
-        var url = $"http://localhost:5002/api/Contacts";
+        var url = $"http://172.16.0.18:2030/api/Contacts";
         using (httpClient = new HttpClient())
         {
             var respuesta = await httpClient.GetAsync(url);

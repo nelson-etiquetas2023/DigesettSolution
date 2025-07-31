@@ -187,12 +187,13 @@ namespace Digesett.Server.Services.EmployeeService
             await conn.CloseAsync();
             return lista;
         }
-        public async Task<bool> VerificarEmployeeNewBioAdmin(List<Employee> empleados)
+        public async Task<List<Employee>> VerificarEmployeeNewBioAdmin(List<Employee> empleados)
         {
+            //filtra los empleado que estan en nomina.
+            var listaenNomina = empleados.Where(x => x.FueraNomina == false).ToList();
+            var listaEmplenuevos = new List<Employee>();
             try
-            {
-                //filtra los empleado que estan en nomina.
-                var listaenNomina = empleados.Where(x => x.FueraNomina == false).ToList();
+            { 
                 SqlConnection conn = new(StrConnBioAdmin);
                 await conn.OpenAsync();
                 //recorrer para verificar en bio-admin.
@@ -252,16 +253,23 @@ namespace Digesett.Server.Services.EmployeeService
                         comandoNoExite.Parameters.Add(c6);
                         comandoNoExite.Parameters.Add(c7);
                         comandoNoExite.ExecuteNonQuery();
+                        //agrego el empleado a la lista de nuevo.
+                        Employee Nuevo = new Employee()
+                        {
+                            cod_empleado = item.cod_empleado,
+                            nombre_empleado = item.nombre_empleado,
+                            departamento = item.departamento,
+                        };
+                        listaEmplenuevos.Add(Nuevo);
                     }
 
                 }
-                return true;
             }
             catch(SqlException ex)
             {
                 errorConn = ex.Message;
-                return false;
             }
+            return listaEmplenuevos;
         }
 
      

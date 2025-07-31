@@ -102,7 +102,7 @@ else
         {
             try
             {
-                var url = $"http://localhost:5002/api/users/" + id;
+                var url = $"http://172.16.0.18:2030/api/users/" + id;
                 var respuesta = await httpClient.GetAsync(url);
                 var rptString = await respuesta.Content.ReadAsStringAsync();
                 var item = JsonSerializer.Deserialize<User>(rptString, new JsonSerializerOptions()
@@ -137,7 +137,7 @@ else
             {
                 try
                 {
-                    var url = "http://localhost:5002/api/Users/" + id;
+                    var url = "http://172.16.0.18:2030/api/Users/" + id;
                     httpClient.DefaultRequestHeaders.Clear();
                     var respuesta = await httpClient.DeleteFromJsonAsync<User>(url);
                 }

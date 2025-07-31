@@ -60,7 +60,7 @@ else
     private async Task<Contact> LoadData()
     {
 
-        var url = "http://localhost:5002/api/Contacts/" + id;
+        var url = "http://172.16.0.18:2030/api/Contacts/" + id;
         using (httpClient = new HttpClient())
         {
             var respuesta = await httpClient.GetAsync(url);
@@ -81,7 +81,7 @@ else
         {
             try
             {
-                var url = "http://localhost:5002/api/Contacts/" + id;
+                var url = "http://172.16.0.18:2030/api/Contacts/" + id;
                 httpClient.DefaultRequestHeaders.Clear();
                 var respuesta = await httpClient.PostAsJsonAsync<Contact>(url, Contacto);
                 var rptaString = await respuesta.Content.ReadAsStringAsync();

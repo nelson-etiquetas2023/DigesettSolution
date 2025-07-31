@@ -1,6 +1,7 @@
 ﻿using CurrieTechnologies.Razor.SweetAlert2;
 using Digesett.Shared.Models;
 using Microsoft.JSInterop;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -13,6 +14,7 @@ namespace Digesett.Frontend.Services
         SweetAlertService Swal { get; set; } = swal;
         public IJSRuntime Js { get; } = JS;
         private static readonly JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
+        private List<Employee> empleadosNuevos = new();
 
         public async Task<List<Employee>> GetEmployees()
         {
@@ -101,7 +103,8 @@ namespace Digesett.Frontend.Services
             var respuesta = await httpclient.PostAsync(url, content);
             if (respuesta.IsSuccessStatusCode)
             {
-                await Swal.FireAsync("Advertencia", "Ejecucion de la Tarea de Buscar Empleados Nuevos realizada con Exito!", SweetAlertIcon.Success);
+                empleadosNuevos = await respuesta.Content.ReadFromJsonAsync<List<Employee>>() ?? new();
+                await Js.InvokeVoidAsync("mostrarEmpleadosEnDialogo", empleadosNuevos);
             }
             else
             {

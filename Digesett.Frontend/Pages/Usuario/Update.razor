@@ -119,7 +119,7 @@ else
 
     private async Task<User> LoadData()
     {
-        var url = $"http://localhost:5002/api/users/" + id;
+        var url = $"http://172.16.0.18:2030/api/users/" + id;
 
         using (httpClient = new HttpClient())
         {
@@ -141,7 +141,7 @@ else
 
             try
             {
-                var url = $"http://localhost:5002/api/users/" + id;
+                var url = $"http://172.16.0.18:2030/api/users/" + id;
                 httpClient.DefaultRequestHeaders.Clear();
                 var respuesta = await httpClient.PostAsJsonAsync<User>(url, user);
                 var rptString = await respuesta.Content.ReadAsStringAsync();
@@ -153,10 +153,4 @@ else
         }
         navigator.NavigateTo("../usuario/index");
     }
-
-
-
-
-
-
 }

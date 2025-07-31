@@ -10,7 +10,7 @@ namespace Digesett.Server.Services.EmployeeService
         Task ActualizarStatus(List<Employee> ListaException);
         Task<List<Employee>> ExceptionVerifyOut();
         Task<List<Employee>> ActualizarPeriodos(List<Employee> lista);
-        Task<bool> VerificarEmployeeNewBioAdmin(List<Employee> empleados);
+        Task<List<Employee>> VerificarEmployeeNewBioAdmin(List<Employee> empleados);
         Task<List<Employee>> CheckEmpleadosCancelados(List<Employee> lista_nomina);
         Task<List<PoncheRegistro>> ObtenerHorarioEmpleado(List<PoncheRegistro> ponches); 
     }
