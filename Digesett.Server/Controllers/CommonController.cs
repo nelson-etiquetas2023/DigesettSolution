@@ -6,19 +6,17 @@ namespace Digesett.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CommonController : ControllerBase
+    public class CommonController(IServiceCommon serviceCommon) : ControllerBase
     {
-        public IServiceCommon ServiceCommon { get; set; }
+        public IServiceCommon ServiceCommon { get; set; } = serviceCommon;
 
-        public CommonController(IServiceCommon serviceCommon)
-        {
-            ServiceCommon = serviceCommon;
-        }
 
-        [HttpPost("EmpleadosCancelados")]
-        public void VerifyEmployeeCanceled(List<Employee> lista)  
+
+        [HttpPost("Verificar-Empleados-Cancelados")]
+        public Task<List<Employee>> PostAsync(List<Employee> lista)  
         {
-            ServiceCommon.VerificarEmpleadosCancelados(lista);
+            return ServiceCommon.EmpleadosCancelados(lista);
+            
         }
     }
 }

@@ -2,6 +2,7 @@
 using Digesett.Server.Services.EmployeeService;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Digesett.Server.Services
 {
@@ -20,7 +21,8 @@ namespace Digesett.Server.Services
             ServiceEmployee = serviceEmployee;
         }
 
-        public async Task VerificarEmpleadosCancelados(List<Employee> listNomina)
+        
+        public async Task<List<Employee>> EmpleadosCancelados([FromBody] List<Employee> listNomina)
         {
             List<Employee> listaEmployeeCanceled = [];
             List<Employee> listaBioAdmin = await ServiceEmployee.GetDataEmployeeBioAdmin();
@@ -32,7 +34,7 @@ namespace Digesett.Server.Services
             //x.cod_empleado 
             //== p.cod_empleado))];
 
-            listaEmployeeCanceled = listaBioAdmin.Where(p1 => !listNomina.Any(p2 => p2.cod_empleado == p1.cod_empleado)).ToList();
+            listaEmployeeCanceled = [.. listaBioAdmin.Where(p1 => !listNomina.Any(p2 => p2.cod_empleado == p1.cod_empleado))];
 
 
 
@@ -42,6 +44,7 @@ namespace Digesett.Server.Services
                 await CanceledEmployeeBioAdmin(item);
                 Console.WriteLine(item.cod_empleado + " " + item.nombre_empleado);
             }
+            return listaEmployeeCanceled;
         }
 
         public async Task CanceledEmployeeBioAdmin(Employee empleado) 

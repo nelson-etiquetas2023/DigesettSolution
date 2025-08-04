@@ -18,7 +18,7 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddHttpClient("Digesett", option =>
 {
-    option.BaseAddress = new Uri("http://172.16.0.18:2050");
+    option.BaseAddress = new Uri("http://localhost:5002");
     option.Timeout = TimeSpan.FromSeconds(15);
     option.DefaultRequestHeaders.Add("User-Agent", "BlazorApp");
 });

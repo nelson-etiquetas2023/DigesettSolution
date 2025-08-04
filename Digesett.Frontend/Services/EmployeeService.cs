@@ -14,7 +14,7 @@ namespace Digesett.Frontend.Services
         SweetAlertService Swal { get; set; } = swal;
         public IJSRuntime Js { get; } = JS;
         private static readonly JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
-        private List<Employee> empleadosNuevos = new();
+        private List<Employee> empleadosNuevos = [];
 
         public async Task<List<Employee>> GetEmployees()
         {
@@ -103,7 +103,7 @@ namespace Digesett.Frontend.Services
             var respuesta = await httpclient.PostAsync(url, content);
             if (respuesta.IsSuccessStatusCode)
             {
-                empleadosNuevos = await respuesta.Content.ReadFromJsonAsync<List<Employee>>() ?? new();
+                empleadosNuevos = await respuesta.Content.ReadFromJsonAsync<List<Employee>>() ?? [];
                 await Js.InvokeVoidAsync("mostrarEmpleadosEnDialogo", empleadosNuevos);
             }
             else

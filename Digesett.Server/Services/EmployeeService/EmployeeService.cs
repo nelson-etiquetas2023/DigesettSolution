@@ -1,6 +1,5 @@
 ﻿using Digesett.Shared.Models;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore.Storage;
 using System.Data;
 
 namespace Digesett.Server.Services.EmployeeService

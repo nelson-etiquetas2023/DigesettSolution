@@ -4,6 +4,6 @@ namespace Digesett.Server.Services
 {
     public interface IServiceCommon
     {
-        Task VerificarEmpleadosCancelados(List<Employee> lista);    
+        Task<List<Employee>> EmpleadosCancelados(List<Employee> lista);    
     }
 }
