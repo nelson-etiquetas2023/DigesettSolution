@@ -42,16 +42,35 @@
 </body>
 </html>
 <script>
-    window.mostrarEmpleadosEnDialogo = (empleados) => {
-        if (!empleados || empleados.lenght === 0) {
-            Swal.fire({
-                icon: 'info',
-                title: 'sin empleados nuevos',
-                text: 'No se han encontrados nuevos empleados para registrar.'
-            })
-            return;
-        }
 
+
+
+
+    window.dialogEmpleadosConLicencia = (empleados) => {
+
+       
+        let html = "<table style='width:100%; text-align: left; border-collapse: collapse'>";
+        html += "<tr><th style='border-bottom:1px solid #ccc; padding:5px'>Codigo</th><th style='border-bottom:1px solid #ccc; padding:5px'>Nombre Empleado</th><th style='border-bottom:1px solid #ccc; padding:5px'>Concepto</th><th style='border-bottom:1px solid #ccc; padding:5px'>Desde</th><th style='border-bottom:1px solid #ccc; padding:5px'>Hasta</th></tr>";
+
+        empleados.forEach(emp => {
+            html += `<tr><td style='padding:5px'>${emp.cod_empleado}</td><td style='padding:5px'>${emp.nombre_empleado}</td><td style='padding:5px'>${emp.status}</td><td style='padding:5px'>${emp.fechaSalida}</td><td style='padding:5px'>${emp.fechaEntrada}</td></tr>`;
+        });
+
+        html += "</table>";
+
+        Swal.fire({
+            title: 'Empleados con Licencia',
+            html: html,
+            icon: 'success',
+            confirmButtonText: 'Aceptar',
+            width: 1000
+        });
+
+        console.log(empleados);
+        
+    };
+    window.mostrarEmpleadosEnDialogo = (empleados) => {
+       
         let html = "<table style='width:100%; text-align: left; border-collapse: collapse'>";
         html += "<tr><th style='border-bottom:1px solid #ccc; padding:5px'>Codigo</th><th style='border-bottom:1px solid #ccc; padding:5px'>Nombre Empleado</th></tr>";
 
@@ -62,12 +81,11 @@
         html += "</table>";
 
         Swal.fire({
-            title: 'Empleados Nuevos',
+            title: 'Sistema de Ponches-Nomina',
             html: html,
             icon: 'success',
-            confirmButtonText: 'Cerrar',
+            confirmButtonText: 'Aceptar',
             width: 600
         });
-
     };
 </script>

@@ -7,7 +7,7 @@ namespace Digesett.Frontend.Services
     {
         List<Employee> Employees { get; set; }
         Task<List<Employee>> GetEmployees();
-        Task<bool> ActualizarStatusNomina(List<Employee> empleados);
+        Task<bool> EmpleadosStatuslicencia(List<Employee> empleados);
         Task VerificarPeriodosVencidos();
         Task ActualizarPeriodos(List<Employee> lista);
         Task<bool> VerificarEmployeeNewBioAdmin(List<Employee> empleados);

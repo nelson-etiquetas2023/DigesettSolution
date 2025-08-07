@@ -18,37 +18,47 @@ namespace Digesett.Frontend.Services
 
         public async Task<List<Employee>> GetEmployees()
         {
-            var url = $"http://172.16.0.18:2030/Api/Employee";
+            var url = $"http://localhost:5002/Api/Employee";
             var respuesta = await HttpClient.GetAsync(url);
             var respuestaString = await respuesta.Content.ReadAsStringAsync();
             Employees = JsonSerializer.Deserialize<List<Employee>>(respuestaString,jsonOptions)!;
 
             return Employees;
         }
-        public async Task<bool> ActualizarStatusNomina(List<Employee> empleados)
+        public async Task<bool> EmpleadosStatuslicencia(List<Employee> ListadoNomina)
         {
-            //Consulta de los Empleados que estan de Exception o en 
+            //Consulta de los Empleados que estan de Exception o en     
             //status fuera de nomina.
-            var queryEx = (from q in empleados
+            var EmpleadosConLicencia = (from q in ListadoNomina
                            where q.FueraNomina
-                           select q).ToList();
+                                        select new
+                                        {
+                                            q.cod_empleado,
+                                            q.nombre_empleado,
+                                            q.status,
+                                            fechaSalida = q.ExceptionDateStart.ToString("dd/MM/yyyy"),
+                                            fechaEntrada = q.ExceptionDateEnd.ToString("dd/MM/yyyy")
+                                        }).ToList();
+
+
+            await Js.InvokeVoidAsync("dialogEmpleadosConLicencia", EmpleadosConLicencia);
 
            
             //endpoint que procesa la peticion de actualizar bioadmin.
-            var url = $"http://172.16.0.18:2030/api/Employee/ActualizarStatus";
+            var url = $"http://localhost:5002/api/Employee/ActualizarStatus";
 
             //hacemos la peticion al secver
             var httpclient = new HttpClient();
-            var jsonContent = JsonSerializer.Serialize(queryEx, jsonOptions);
+            var jsonContent = JsonSerializer.Serialize(EmpleadosConLicencia, jsonOptions);
             var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
             var respuesta = await HttpClient.PostAsync(url, content);
             if (respuesta.IsSuccessStatusCode)
             {
-                await Swal.FireAsync("advertencia", "Tarea1: Actualizar bioadmin status fuera nomina", SweetAlertIcon.Success);
+                //await Swal.FireAsync("advertencia", "Tarea1: Actualizar bioadmin status fuera nomina", SweetAlertIcon.Success);
             }
             else
             {
-                await Swal.FireAsync("Error", respuesta.Content.ReadAsStringAsync().ToString(), SweetAlertIcon.Error);
+                //await Swal.FireAsync("Error", respuesta.Content.ReadAsStringAsync().ToString(), SweetAlertIcon.Error);
             }
             return respuesta.IsSuccessStatusCode;
         }
@@ -104,10 +114,20 @@ namespace Digesett.Frontend.Services
             if (respuesta.IsSuccessStatusCode)
             {
                 empleadosNuevos = await respuesta.Content.ReadFromJsonAsync<List<Employee>>() ?? [];
+
+
+                if (empleadosNuevos.Count == 0)
+                {
+                    await Swal.FireAsync("advertencia","No existen empleados nuevos...");
+                    return false;    
+                }
+                
                 await Js.InvokeVoidAsync("mostrarEmpleadosEnDialogo", empleadosNuevos);
+               
             }
             else
             {
+
                 await Swal.FireAsync("Error", respuesta.Content.ReadAsStringAsync().ToString(), SweetAlertIcon.Error);
             }
             return respuesta.IsSuccessStatusCode;

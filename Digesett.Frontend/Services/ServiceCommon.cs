@@ -3,23 +3,23 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.JSInterop;
+using CurrieTechnologies.Razor.SweetAlert2;
 
 namespace Digesett.Frontend.Services
 {
-    public class ServiceCommon(IHttpClientFactory httpClientFactory, IJSRuntime JS) : IServiceCommon
+    public class ServiceCommon(IHttpClientFactory httpClientFactory, IJSRuntime JS, SweetAlertService swal) : IServiceCommon
     {
         private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
         public  IJSRuntime Js { get; } = JS;
         private static readonly JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
-       
+        public SweetAlertService Swal { get; set; } = swal;
+
 
         public async Task VerifyEmployeeCanceled(List<Employee> listaNomina)
         { 
             var json = JsonSerializer.Serialize(listaNomina, jsonOptions);
             var jsonContent = new StringContent(json, Encoding.UTF8, "application/json");
             
-            
-
             var cliente = _httpClientFactory.CreateClient("Digesett");
             var url = $"/api/Common/Verificar-Empleados-Cancelados";
 
@@ -30,7 +30,14 @@ namespace Digesett.Frontend.Services
                 var empleadosCancelados = await response.Content.ReadFromJsonAsync<List<Employee>>(new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
-                });
+                }) ?? [];
+
+
+                if (empleadosCancelados.Count == 0) 
+                {
+                    await  Swal.FireAsync("advertencia", "No existen empleados a Cancelar...");
+                    return;
+                }
 
                 await Js.InvokeVoidAsync("mostrarEmpleadosEnDialogo", empleadosCancelados);
             }

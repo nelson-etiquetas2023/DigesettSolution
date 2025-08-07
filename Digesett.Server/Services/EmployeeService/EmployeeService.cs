@@ -7,8 +7,7 @@ namespace Digesett.Server.Services.EmployeeService
     public class EmployeeService : IEmployeeService
     {
         private readonly List<Employee> lista = [];
-       
-        
+           
         public string errorConn = "";
         public bool errorStatus = false;
         public IConfiguration Configuration { get; set; }
@@ -31,7 +30,7 @@ namespace Digesett.Server.Services.EmployeeService
                 {
                     Connection = conn,
                     CommandType = CommandType.Text,
-                    CommandText = "SELECT iduser,name FROM [dbo].[User]"
+                    CommandText = "SELECT iduser,name FROM [dbo].[User] WHERE active=1"
                 };
                 await conn.OpenAsync();
                 SqlDataReader reader = comando.ExecuteReader();
@@ -253,7 +252,7 @@ namespace Digesett.Server.Services.EmployeeService
                         comandoNoExite.Parameters.Add(c7);
                         comandoNoExite.ExecuteNonQuery();
                         //agrego el empleado a la lista de nuevo.
-                        Employee Nuevo = new Employee()
+                        Employee Nuevo = new()
                         {
                             cod_empleado = item.cod_empleado,
                             nombre_empleado = item.nombre_empleado,
